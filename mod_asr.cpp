@@ -107,22 +107,28 @@ long g_expireTime = -1;
 
 SpeechTranscriberRequest* generateAsrRequest(AsrParamCallBack * cbParam);
 
+//请求token
 int generateToken(std::string akId, std::string akSecret, std::string* token, long* expireTime) {
     NlsToken nlsTokenRequest;
     nlsTokenRequest.setAccessKeyId(akId);
     nlsTokenRequest.setKeySecret(akSecret);
+    //打印请求token的参数	
+    switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "begin send generate token rquest: akId=%s, akSecret=%s\n", akId.c_str(), akSecret.c_str());
 
-
-    if (-1 == nlsTokenRequest.applyNlsToken()) {
+    int ret = nlsTokenRequest.applyNlsToken();
+    switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "request success, status code=%d, token=%s, expireTime=%d, message=%s\n", ret, nlsTokenRequest.getToken(), nlsTokenRequest.getExpireTime(), nlsTokenRequest.getErrorMsg());
+    if (ret < 0) {
          switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "generateToken Failed: %s\n", nlsTokenRequest.getErrorMsg());
-
         return -1;
     }
 
-
     *token = nlsTokenRequest.getToken();
+    if (*token == "") {
+	switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "generateToken Failed: token is '' \n");
+	return -1;
+    }
+    
     *expireTime = nlsTokenRequest.getExpireTime();
-
 
     return 0;
 }
