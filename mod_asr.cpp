@@ -133,7 +133,12 @@ int generateToken(std::string akId, std::string akSecret, std::string* token, lo
     return 0;
 }
 
-
+/**
+ * 识别启动回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onTranscriptionStarted(NlsEvent* cbEvent, void* cbParam) {
    AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
 
@@ -159,7 +164,12 @@ void onTranscriptionStarted(NlsEvent* cbEvent, void* cbParam) {
 }
 
 
-
+/**
+ * @brief 一句话开始回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrSentenceBegin(NlsEvent* cbEvent, void* cbParam) {
 	AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
      switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrSentenceBegin: %s\n", tmpParam->sUUID);
@@ -168,6 +178,12 @@ void onAsrSentenceBegin(NlsEvent* cbEvent, void* cbParam) {
                 cbEvent->getSentenceTime());
 }
 
+/**
+ * @brief 一句话结束回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrSentenceEnd(NlsEvent* cbEvent, void* cbParam) {
 	AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
      switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrSentenceEnd: %s\n", tmpParam->sUUID);
@@ -196,6 +212,12 @@ void onAsrSentenceEnd(NlsEvent* cbEvent, void* cbParam) {
 
 }
 
+/**
+ * @brief 识别结果变化回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrTranscriptionResultChanged(NlsEvent* cbEvent, void* cbParam) {
 	AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
      switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrTranscriptionResultChanged: %s\n", tmpParam->sUUID);
@@ -222,6 +244,12 @@ void onAsrTranscriptionResultChanged(NlsEvent* cbEvent, void* cbParam) {
     postResult(cbEvent->getAllResponse(),tmpParam);
 }
 
+/**
+ * @brief 语音转写结束回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrTranscriptionCompleted(NlsEvent* cbEvent, void* cbParam) {
 	AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
     switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrTranscriptionCompleted: %s\n", tmpParam->sUUID);
@@ -238,6 +266,12 @@ void onAsrTranscriptionCompleted(NlsEvent* cbEvent, void* cbParam) {
     }
 }
 
+/**
+ * @brief 异常识别回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrTaskFailed(NlsEvent* cbEvent, void* cbParam) {
 	AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
     switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrTaskFailed: %s\n", tmpParam->sUUID);
@@ -256,12 +290,24 @@ void onAsrTaskFailed(NlsEvent* cbEvent, void* cbParam) {
     }
 }
 
+/**
+ * @brief 二次结果返回回调函数, 开启enable_nlp后返回
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrSentenceSemantics(NlsEvent* cbEvent, void* cbParam) {
     AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
      switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrSentenceSemantics: %s\n", tmpParam->sUUID);
      switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE,"onAsrSentenceSemantics: all response=%s\n", cbEvent->getAllResponse());
 }
 
+/**
+ * @brief 识别通道关闭回调函数
+ * 
+ * @param cbEvent 
+ * @param cbParam 
+ */
 void onAsrChannelClosed(NlsEvent* cbEvent, void* cbParam) {
 
 	AsrParamCallBack* tmpParam = (AsrParamCallBack*)cbParam;
@@ -275,10 +321,13 @@ void onAsrChannelClosed(NlsEvent* cbEvent, void* cbParam) {
     delete tmpParam;
 }
 
-
-
+/**
+ * @brief asr请求构建
+ * 
+ * @param cbParam 
+ * @return SpeechTranscriberRequest* 
+ */
 SpeechTranscriberRequest* generateAsrRequest(AsrParamCallBack * cbParam) {
-
 
     time_t now;
 
@@ -291,9 +340,6 @@ SpeechTranscriberRequest* generateAsrRequest(AsrParamCallBack * cbParam) {
             return NULL;
         }
     }
-
-
-
 
     SpeechTranscriberRequest* request = NlsClient::getInstance()->createTranscriberRequest();
     if (request == NULL) {
@@ -343,7 +389,11 @@ extern "C" {
 };
 
 
-
+/**
+ * 配置加载 aliyun的appkey，akid，aksecret
+ * 
+ * @return switch_status_t 执行状态：
+ */
 static switch_status_t load_config()
 {
 	const char *cf = "aliasr.conf";
@@ -355,33 +405,50 @@ static switch_status_t load_config()
 		return SWITCH_STATUS_TERM;
 	}
 
-	if ((settings = switch_xml_child(cfg, "settings"))) {
-		for (param = switch_xml_child(settings, "param"); param; param = param->next) {
-			char *var = (char *) switch_xml_attr_soft(param, "name");
-			char *val = (char *) switch_xml_attr_soft(param, "value");
-		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "read conf %s %s\n", var,val);
-
-			if (!strcasecmp(var, "appkey")) {
-			    g_appkey = val;
-			}else if (!strcasecmp(var, "akid")) {
-				 g_akId =  val;
+    settings = switch_xml_child(cfg, "settings");
+    if (!settings) {
+        switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "No settings in asr config\n");
+		switch_xml_free(xml);
+		return SWITCH_STATUS_TERM;
+    }
 
 
-			}else if (!strcasecmp(var, "aksecret")) {
+    for (param = switch_xml_child(settings, "param"); param; param = param->next) {
+        char *var = (char *) switch_xml_attr_soft(param, "name");
+        char *val = (char *) switch_xml_attr_soft(param, "value");
 
-			     g_akSecret=  val;
+        switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Read conf: %s = %s\n", var, val);
 
-             }
-		}
-	}
+        //strcasecmp：忽略大小写比较字符串（二进制）
+        if (!strcasecmp(var, "appkey")) {
+            g_appkey = val;
+            continue;
+        }
+        
+        if (!strcasecmp(var, "akid")) {
+                g_akId =  val;
+                continue;
+        }
+        
+        if (!strcasecmp(var, "aksecret")) {
+                g_akSecret=  val;
+                continue;
+            }
+    }
 
 	return SWITCH_STATUS_SUCCESS;
 
 }
 
 
-
-
+/**
+ * asr 回调处理
+ * 
+ * @param bug 
+ * @param user_data 
+ * @param type 
+ * @return switch_bool_t 
+ */
 static switch_bool_t asr_callback(switch_media_bug_t *bug, void *user_data, switch_abc_type_t type)
 {
     switch_da_t *pvt = (switch_da_t *)user_data;
@@ -526,7 +593,9 @@ static switch_bool_t asr_callback(switch_media_bug_t *bug, void *user_data, swit
     return SWITCH_TRUE;
 }
 
-
+/**
+ *  定义添加的函数
+ */
 SWITCH_STANDARD_APP(stop_asr_session_function)
 {
     switch_da_t *pvt;
@@ -541,23 +610,29 @@ SWITCH_STANDARD_APP(stop_asr_session_function)
     }
 }
 
-
+/**
+ *  定义添加的函数
+ * 
+ *  注意：App函数是自带session的，Api中是没有的
+ *       App函数中没有stream用于控制台输出的流；Api中是有的
+ *       App函数不需要返回值；Api中是有的
+ */
 SWITCH_STANDARD_APP(start_asr_session_function)
 {
-
-
     switch_channel_t *channel = switch_core_session_get_channel(session);
     switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Starting asr:%s\n", switch_channel_get_name(channel));
 
     switch_status_t status;
     switch_da_t *pvt;
     switch_codec_implementation_t read_impl;
+
+    //memset是计算机中C/C++语言初始化函数。作用是将某一块内存中的内容全部设置为指定的值， 这个函数通常为新申请的内存做初始化工作。
     memset(&read_impl, 0, sizeof(switch_codec_implementation_t));
 
+    //获取读媒体编码实现方法
     switch_core_session_get_read_impl(session, &read_impl);
 
     if (!(pvt = (switch_da_t*)switch_core_session_alloc(session, sizeof(switch_da_t)))) {
-
         return;
     }
 
@@ -567,7 +642,6 @@ SWITCH_STANDARD_APP(start_asr_session_function)
     pvt->datalen = 0;
     pvt->session = session;
 
-
     if ((status = switch_core_new_memory_pool(&pvt->pool)) != SWITCH_STATUS_SUCCESS) {
        switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_CRIT, "Memory Error!\n");
 
@@ -576,8 +650,7 @@ SWITCH_STANDARD_APP(start_asr_session_function)
 
     switch_mutex_init(&pvt->mutex,SWITCH_MUTEX_NESTED,pvt->pool);
 
-
-
+    //session添加media bug
     if ((status = switch_core_media_bug_add(session, "asr", NULL,
         asr_callback, pvt, 0, SMBF_WRITE_REPLACE |  SMBF_NO_PAUSE | SMBF_ONE_ONLY, &(pvt->bug))) != SWITCH_STATUS_SUCCESS) {
         return;
@@ -590,10 +663,9 @@ SWITCH_STANDARD_APP(start_asr_session_function)
 }
 
 
-
-
-
-
+/**
+ *  定义load函数，加载时运行
+ */
 SWITCH_MODULE_LOAD_FUNCTION(mod_asr_load)
 {
 
@@ -622,7 +694,9 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_asr_load)
     return SWITCH_STATUS_SUCCESS;
 }
 
-
+/**
+ *  定义shutdown函数，关闭时运行
+ */
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_asr_shutdown)
 {
     switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_DEBUG, " asr_shutdown\n");

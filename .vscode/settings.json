@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "ios": "cpp",
+        "__locale": "cpp",
+        "filesystem": "cpp",
+        "fstream": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "string": "cpp",
+        "__mutex_base": "cpp"
+    }
+}
